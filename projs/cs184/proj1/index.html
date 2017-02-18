@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Vi Le, CS184-aaf</h2>
+
+<td>
+  <img src="images/lion.png" align="right" width="500px"/>
+</td>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+
+<p>Section I of this project focused on the 2D aspect of rasterization. I implemented a triangle rasterizer with antialiasing to smooth things out when seen on screen by the naked eye. Then, I implemented transforms which allowed for better control of the viewport as well seeing how different orientation of shapes cause a different effect of anitalising than before. Section II introduced how rasterization can work with 3D objects as it was mainly texture mapping. The first part was about color as an introduction to interpolation and how interpolation can help make color gradients needed for smoother transitions. The next ones were about how to map textures by using uv's and how to overcome the problems with resolutions by using different methods of sampling for antialiasing.</p>
+<p>I think it's amazing how much computation goes into displaying images, especially to make them look good. Considering how much debugging I had to do to get the texture maps on correctly and how often I got segmetation faults due to indexing, I definitely sympathize a little more with Maya when the textures don't show up or when it goes crashing on me.</p>
+
+<!-- <p>Give a high-level overview of what you implemented in this project. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the project.</p> -->
+
+<h2 align="left">Section I: Rasterization</h2>
+
+<h3 align="left">Part 1: Rasterizing single-color triangles</h3>
+
+<!-- <p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+ -->
+
+<p> I iterated over the rows and columns of coordinates and if they were inside the triangle provided, then I filled the pixel there in with the given color, otherwise, I did nothing and continued iterating. I checked if they were inside the triangle by using barycentric coordinates because if any of the coordinates were out side the bounds of 0 and 1, they would be outside of the triangle. This algorithm is no worse than one that checks each sample within the bounding box of the triangle because it is that one. By taking the minimum and maximum x and y coordinates, I can start and end my checks with them, checking over the bounding box mentioned previously. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part2-1.png" align="middle" width="700px"/>
+        <figcaption align="middle">Triangles from basic/test4.svg</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Extra Credit</h3>
+
+<p> I then made some optimizations by using boolean switches. For each row, I kept track of when the index entered the triangle and when it exited the triangle, and once it exited the triangle, I would end the traversal for that row. This effectively cuts the time it takes to traverse the bounding box whitespace to the right of the triangle, and thus runs faster than the checking over the bounding box.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+  <caption> Time Comparisons </caption>
+  <tr>
+  <th style="padding:0 15px 0 15px;"> Test Number </th>
+  <th style="padding:0 15px 0 15px;"> Naive </th>
+  <th style="padding:0 15px 0 15px;"> Optimized </th>
+  </tr>  
+  <tr>
+  <td style="padding:0 15px 0 15px;"> 1 </td>
+  <td style="padding:0 15px 0 15px;"> 0.005914 </td>
+  <td style="padding:0 15px 0 15px;"> 0.005658 </td>
+  </tr>
+  <tr>
+  <td style="padding:0 15px 0 15px;"> 2 </td>
+  <td style="padding:0 15px 0 15px;"> 0.001857 </td>
+  <td style="padding:0 15px 0 15px;"> 0.001843 </td>
+  </tr>
+  <tr>
+  <td style="padding:0 15px 0 15px;"> 3 </td>
+  <td style="padding:0 15px 0 15px;"> 0.030958 </td>
+  <td style="padding:0 15px 0 15px;"> 0.023161 </td>
+  </tr>
+  <tr>
+  <td style="padding:0 15px 0 15px;"> 4 </td>
+  <td style="padding:0 15px 0 15px;"> 0.006113 </td>
+  <td style="padding:0 15px 0 15px;"> 0.001693 </td>
+  </tr>
+  <tr>
+  <td style="padding:0 15px 0 15px;"> 5 </td>
+  <td style="padding:0 15px 0 15px;"> 0.015428 </td>
+  <td style="padding:0 15px 0 15px;"> 0.005084 </td>
+  </tr>
+  <td style="padding:0 15px 0 15px;"> 6 </td>
+  <td style="padding:0 15px 0 15px;"> 0.006552 </td>
+  <td style="padding:0 15px 0 15px;"> 0.00356 </td>
+  </tr>
+  <td style="padding:0 15px 0 15px;"> 7 </td>
+  <td style="padding:0 15px 0 15px;"> 0.072531 </td>
+  <td style="padding:0 15px 0 15px;"> 0.057573 </td>
+  </tr>
+
+  </table>
+</div>
+
+<h3 align="left">Part 2: Antialiasing triangles</h3>
+
+<p> Like in part 1, I iterated over the rows and columns of coordinates, but instead of checking if those points were in the triangle, I iterated over the coordinates that represented the subpixels, which were equal to the sample rate. Then, I checked if those were in the triangle and assigned them their color if they were. When I was done iterating over all the subpixels, I set the color of the pixel to the average of the colors of the subpixels. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part2-1.png" align="middle" width="350px"/>
+        <figcaption align="middle">Sample Rate 1</figcaption>
+      </td>
+      <td>
+        <img src="images/part2-2.png" align="middle" width="350px"/>
+        <figcaption align="middle">Sample Rate 4</figcaption>
+      </td>
+      <td>
+        <img src="images/part2-4.png" align="middle" width="350px"/>
+        <figcaption align="middle">Sample Rate 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Extra Credit</h3>
+
+<p> I implemented a jittered sampling method by sampling a random point for each sub pixel instead of the center. This can be toggled by using the J key.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part2-normal.png" align="middle" width="300px"/>
+        <figcaption align="middle">Sample Rate 16 Original Sampling</figcaption>
+      </td>
+      <td>
+        <img src="images/part2-jitter.png" align="middle" width="300px"/>
+        <figcaption align="middle">Sample Rate 16 with Jittered Sampling</figcaption>
+      </td>    </tr>
+  </table>
+</div>
+
+<h3 align="left">Problems Encountered</h3>
+
+<p>I had a problem where all the pixels were becoming lighter instead of just the ones at the edges where the subpixels would have variation in color. I later figured out that fill_color indexed using whole numbers instead of the fractions I was passing in, which were all converted to integers and only filled in one subpixel, causing the average to be uniformly lighter, so I changed my indexing method to be with integers and used those to calculate the fractions I needed instead.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/prob1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Example of Problem with Pixels Becoming Uniformly Lighter</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Part 3: Transforms</h3>
+
+<p>I implemented the transforms using the mathematical concepts we learned in class regarding matrices for each type of transform. By editing the svg, I tried to make Cubeman wave by rotating its arm and translating it to match the shoulder again because the pivot of rotation was not defined.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part3-wave.png" align="middle" width="700px"/>
+        <figcaption align="middle">Waving Cubeman</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Extra Credit</h3>
+
+<p>I also added an extra rotation feature to the GUI using R and T to rotate the image. I took the current SVG 3x3 matrix in SVG to NDC and translated it so that its center matched the origin, rotated it by 30 degrees either direction depending on R and T, and translated it back to its original center. Then, I redrew it, which takes care of the NDC to screen-space matrix stack. In the same way, I also implemented a scale feature using Y and U to scale by 10%. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part3-rotate.png" align="middle" width="400px"/>
+        <figcaption align="middle">Extra Rotation Feature on svg/basic/test6.svg <br></br> (Use R and T to Rotate)</figcaption>
+      </td>
+      <td>
+        <img src="images/part3-scale.png" align="middle" width="400px"/>
+        <figcaption align="middle">Extra Scale Feature on svg/basic/test3.svg <br></br> (Use Y and U to Scale)</figcaption>
+      </td>    </tr>
+  </table>
+</div>
+
+<h2 align="left">Section II: Sampling</h2>
+
+<h3 align="left">Part 4: Barycentric coordinates</h3>
+
+<p>Barycentric coordinates are used for triangles, usually used to describe the areas of a triangle in relation to a point P. Essentially, these values describe how much influence, or weight, each vertex has on point P. Each barycentric coordinate corresponds to a vertex of the triangle and is the ratio of the area of a sub-triangle created by vertex P and two other vertices of the original triangle to the area of the original triangle. In the example below, each vertex of the triangle represents a different color, red, blue, and green. At each point in the triangle, red, blue, and green all have different weights and by calculating those weights with barycentric coordinates, we can interpolate the color at each point in the triangle. This allows for the variation in color according to those weights, visually creating the gradient you see below.
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part4-1.png" align="middle" width="700px"/>
+        <figcaption align="middle">Example of Colored Triangle Using Barycentric Coordinates</figcaption>
+      </td>
+    </tr>    
+
+    <tr>
+      <td>
+        <img src="images/part4-2.png" align="middle" width="700px"/>
+        <figcaption align="middle">Color Wheel from svg/basic/test7.svg</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Problems Encountered</h3>
+
+<p>The colors were not coming out correctly due to me not interpolating correctly since I thought we had to put in our own colors instead of using the ones provided by p0_col, ..., p2_col.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/prob2.png" align="middle" width="400px"/>
+        <figcaption align="middle">Example of Color Interpolation Error</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Part 5: "Pixel sampling" for texture mapping</h3>
+
+<p>Pixel sampling is the way you choose pixels to map textures on an object. Nearest sampling takes on the value of the nearest texel while bilinear sampling takes 4 of the closest texels and takes a weighted average between them depending on the distance. I implemented this by scaling the uv's to the height and width of the texture and indexing through the 1D vector of texels to get the 4 values that make up the color for that texel. For nearest, I rounded the uv's to the nearest index while for bilinear, I used a combination of floor and ceiling on the u and v to get the closest 4 indexes and interpolated the colors at those texels with weights corresponding to the distance from the original uv.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part5-nearest1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Nearest with Sample Rate 1<br></br><br></br></figcaption>
+      </td>
+      <td>
+        <img src="images/part5-bilinear1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Bilinear with Sample Rate 1 <br></br><br></br></figcaption>
+      </td>
+    </tr>   
+    <tr>
+      <td>
+        <img src="images/part5-nearest16.png" align="middle" width="500px"/>
+        <figcaption align="middle">Nearest with Sample Rate 16<br></br></figcaption>
+      </td>
+      <td>
+        <img src="images/part5-bilinear16.png" align="middle" width="500px"/>
+        <figcaption align="middle">Bilinear with Sample Rate 16<br></br></figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>Bilinear often allows for a smoother transition in color than nearest sampling does and may capture a part of a color that nearest may miss altogether. For example, if there was a texture with really thin lines, like in the image above, the color for the line may not be in the nearest texel so nearest sampling doesn't take it into account and the line is then lost. However as long as it is one of the four nearest ones, bilinear sampling will take its color into account even though it may contribute very little to the color, it may be just enough to add the presence of a line.</p>
+ 
+<h3 align="left">Problems Encountered</h3>
+
+<p>I had a problem with the texture not being the right color and not being mapped correctly due to not rounding correctly as a result of storing the unsigned characters in texels as another type. I fixed this by putting them into an array of unsigned characters then getting the color from that. I also had a problem with a blurry texture and that was due to finding the color and interpolating after, which resulted in the gradient, or blurriness in this case, in each triangle much like in part 4. I fixed that by finding the u and v through interpolation then sampling to find the color.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/prob3.png" align="middle" width="400px"/>
+        <figcaption align="middle">Example of Incorrect Texel to Color Conversion</figcaption>
+      </td>
+      <td>
+        <img src="images/prob4.png" align="middle" width="375px"/>
+        <figcaption align="middle">Example of Interpolating Colors Instead of UVs</figcaption>
+      </td>   
+    </tr>
+  </table>
+</div>
+
+<h3 align="left">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+<p>Level sampling determines the level of mipmap that we need to look up the texels in. For a Level Sample Method of zero, I just left the level for sampling at zero. For a nearest Level Sample Method, I calculated the level value by using the barycentric coordinates of (x+1,y) and (x,y+1) and the change in uv. Then, I rounded that level value to the nearest one. For a linear Level Sample Method, I calculated the level value the same way as before and took the ceiling and floor. Then I did bilinear sampling with the ceiling level and the floor level and interpolated between the two results using the original level value as the weight.</p>
+
+<p>In terms of computing, level sampling with zero takes the least time since there is no need to calculate the level. However, level sampling with the nearest level is a pretty good trade off because while we do have to calculate teh level every time, its antialiasing power is much better than level zero. The best in terms of antialiasing is linear level sampling, but it it takes a lot more in terms of memory and speed because we must sample twice then interpolate between those results, and even then, the results don't seem to be too much better than nearest level sampling. As for pixel sampling, nearest is a lot faster and uses less memory than linear because it only has to compute one point and store one color whereas linear has to deal with four points and interpolate between them. The difference in antialiasing power between these two isn't that apparent until they are used with a linear level sampling, in which case a linear pixel sampling does much better than nearest.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-lzpn.png" align="middle" width="500px"/>
+        <figcaption align="middle">L_ZERO and P_NEAREST<br></br><br></br></figcaption>
+      </td>
+      <td>
+        <img src="images/part6-lzpl.png" align="middle" width="500px"/>
+        <figcaption align="middle">L_ZERO and P_LINEAR<br></br><br></br></figcaption>
+      </td>
+    </tr>   
+    <tr>
+      <td>
+        <img src="images/part6-lnpn.png" align="middle" width="500px"/>
+        <figcaption align="middle">L_NEAREST and P_NEAREST<br></br></figcaption>
+      </td>
+      <td>
+        <img src="images/part6-lnpl.png" align="middle" width="500px"/>
+        <figcaption align="middle">L_NEAREST and P_LINEAR<br></br></figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="images/part6-llpn.png" align="middle" width="500px"/>
+        <figcaption align="middle">L_LINEAR and P_NEAREST<br></br></figcaption>
+      </td>
+      <td>
+        <img src="images/part6-llpl.png" align="middle" width="500px"/>
+        <figcaption align="middle">L_LINEAR and P_LINEAR<br></br></figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="left">Section III: Art Competition</h2>
+
+<h3 align="left">Part 7: Draw something interesting!</h3>
+
+<p>I made a python script to sweep a color triangle (colortri) from one side to another in a curved fashion with the colors changing throughout and wrote it to a svg file. After I remembered that we could use transforms, I edited the script to do the sweep 4 times, each time rotating it by 90 degrees. Then, I added half of the first sweep at the end to get the sweeps to look like they continuous overlap. The python script can be found in the website folder, the same directory as this html file.  </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part7.png" align="middle" width="700px"/>
+        <figcaption align="middle">Interesting Drawing</figcaption>
+      </td> 
+    </tr>
+  </table>
+</div>
+
+
+</body>
+</html>
