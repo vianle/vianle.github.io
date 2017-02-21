@@ -1,0 +1,367 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 2: Mesh Editor</h1>
+<h2 align="middle">Vi Le, CS184-aaf</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In Section I, I implemented a way to create smooth curves using control points with de Casteljau's algorithm. By using that method in two directions, I could implement a way to smooth a surface. In Section II, I mainly worked with halfedges for different methods and varying levels of smoothing. First, was averaging the normals as way to smooth the shading but not actually alter the mesh. Then, I implemented flip edge and split edge, which were ultimately helper functions for subdivision, a way to smooth the mesh by actually altering it. Last was implementing shaders, which were a step further in making the mesh look even more smooth because lighting is the ultimate teller of G2 continuity.</p>
+
+<h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+<h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+
+<p>De Casteljau's algorithm is recursive interpolation between every pair of vertices to smoothen out the curve they make. I implemented evaluateStep() which takes in the control points and interpolates every pair to get a new set of points that create a smoother curve. evaluateStep() can be called recursively until there is only one point left, in which we have the smoothest curve possible for this set of control points.</p>
+<div align="middle">
+<img src="images/part1-1.png" width="300px"/> <img src="images/part1-2.png" width="300px"/> <img src="images/part1-3.png" width="300px"/> <img src="images/part1-4.png" width="300px"/> <img src="images/part1-6.png" width="300px"/> <img src="images/part1-7.png" width="300px"/>
+</div>
+
+
+<h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+
+<p>We can use de Casteljau's algorithm to interpolate in 2 dimensions and extend this method of smoothing to Bezier surfaces. For examples, in a surface with 4x4 vertices, we can interpolate each row to get 4 points that create smoothed curves for each respective row. Then we can interpolate those 4 points in the columns direction in order to get a smooth curve in this direction too, resulting in a smooth surface.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part2.png" align="middle" width="500px"/>
+        <figcaption align="middle">bez/teapot.bez</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+
+<p>I got the average normals for the vertex by traversing all the neighboring vertices using halfedges, finding the difference vector between them and the current vertex, averaging them by using the cross product, summing up those averages, then normalizing them at the end.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part3-1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+      <td>
+        <img src="images/part3-2.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/part3-3.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+      <td>
+        <img src="images/part3-4.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">Part 4: Half-edge flip</h3>
+<p>I first drew out all the halfedges, vertices, faces, and edges of the original quad then relabeled them in a drawing after the flip. Then, I just reassigned them all according to my drawings. I adopted a naming convention direction to make debugging easier such as ab for a halfedge from a to b and ba for its twin. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part4-1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Before Flips</figcaption>
+      </td>
+      <td>
+        <img src="images/part4-2.png" align="middle" width="400px"/>
+        <figcaption align="middle">After Flips</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">The Debugging Journey</h3>
+<p>The debugging journey was mainly fixing typos and figuring out conceptually why some things that looked wrong were actually right.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part4-m1.png" align="middle" width="350px"/>
+        <figcaption align="middle">edge gone after flip - typo when assigning halfedges</figcaption>
+      </td>
+      <td>
+        <img src="images/part4-m2.png" align="middle" width="350px"/>
+        <figcaption align="middle">edge gone after flip -actually didn't disappear but made a very slim triangle</figcaption>
+      </td>     
+      <td>
+        <img src="images/part4-m3.png" align="middle" width="350px"/>
+        <figcaption align="middle">Looks bad but actually correctly overlapping edges</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">Part 5: Half-edge split</h3>
+<p>Like in part 4, I first drew out all the halfedges, vertices, faces, and edges of the original quad then relabeled them in a drawing after the split, this time, adding some new edges, faces, and a vertex. Then, I instantiated the new edges, faces and vertex and just assigned or reassigned them all according to my drawings. I kept the same naming convention as before to keep things less confusing to debug. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part5-1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Before Splits</figcaption>
+      </td>
+      <td>
+        <img src="images/part5-2.png" align="middle" width="400px"/>
+        <figcaption align="middle">After Splits</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<h3 align="middle">Extra Credit</h3>
+<p>I implemented the Boundary splits by getting the halfedge on the non-boundary face and performing the same actions as a normal split, but excluding any variables that had to do with the second face from the normal split. Then, I got the boundary face and the halfedge of the selected edge that was on the boundary face and reassigned them. I had to make a new halfedge to be the twin of the new halfedge on the non-boundary face side and reassigned the halfedges on the boundary face so that this one was now included.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part5-3.png" align="middle" width="400px"/>
+        <figcaption align="middle">Boundary Splits</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">The Not so Epic Debugging Quest</h3>
+<p>The debugging journey here was pretty nonexistent until I was doing part 6.</p>
+
+<h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+
+<p>I first went through all the edges and vertices and set isNew to false. Then, I averaged each old vertex and put that value into its new position. After, I calculated the positions of the new vertices and put then in the new position for each edge. Then I split the old edges that aren't connected to a new vertex. After each split, I set the new position of the newly created vertex to the one calculated in the previous step. Then, I flip any new edge that connects an old and new vertex. Lastly, I set all the vertices to their new positions.</p>
+
+<p>After each subdivision, edges and corners tend to get less sharp and smoothen out. However, we can lessen this by adding more edges/face/vertices (since adding one of them usually entail adding all the others) by the edges and corner we want to keep more sharp.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-9.png" align="middle" width="400px"/>
+        <figcaption align="middle">Cube with first level subdivision</figcaption>
+      </td>
+      <td>
+        <img src="images/part6-10.png" align="middle" width="400px"/>
+        <figcaption align="middle">Cube with second level subdivision</figcaption>
+      </td>
+    </tr>
+    </tr>
+  </table>
+</div>
+<br>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-6.png" align="middle" width="800px"/>
+        <figcaption align="middle">Pre-processed cube with more splits near edges and corner we want to keep</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-8.png" align="middle" width="400px"/>
+        <figcaption align="middle">Pre-processed cube after first level subdivision</figcaption>
+      </td>     
+      <td>
+        <img src="images/part6-7.png" align="middle" width="400px"/>
+        <figcaption align="middle">Better view of edge and corner (top left) </figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>I can get the cube to subdivide symmetrically by splitting every diagonal edge on every face of the cube. In the original cube, a corner vertex would have neighbors that pull it in one direction when averaged, while in the pre-processed cube, a corner vertex's neighbors are all evenly spaced from it, not pulling it in one overwhelming direction when averaged. The flattened versions of these vertices are shown below for a visual explanation of what's going on.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-oldvertex.png" align="middle" width="300px"/>
+        <figcaption align="middle">Corner vertex with no pre-processing</figcaption>
+      </td>     
+      <td>
+        <img src="images/part6-newvertex.png" align="middle" width="300px"/>
+        <figcaption align="middle">Corner vertex with pre-processing </figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Symmetric pre-processed cube with no subdivision</figcaption>
+      </td>
+      <td>
+        <img src="images/part6-3.png" align="middle" width="500px"/>
+        <figcaption align="middle">Symmetric pre-processed cube first level subdivision</figcaption>
+      </td>
+    </tr>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-4.png" align="middle" width="500px"/>
+        <figcaption align="middle">Symmetric pre-processed cube second level subdivision</figcaption>
+      </td>     
+      <td>
+        <img src="images/part6-5.png" align="middle" width="500px"/>
+        <figcaption align="middle">Symmetric pre-processed cube third level subdivision</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">The Actual Epic Debugging Quest</h3>
+<p>I found a couple of mistake in assigning things in part 5. One big one was completely forgetting to reassign vertices to their new halfedges. That resulted in a subdivided mesh with a lot of holes. A trick I learned in this part was that if I skipped averaging the vertices at the end, I would end up with the original geometry but a subdivided topology that was easier to read.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6-m1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Holes in Subdivision</figcaption>
+      </td>     
+      <td>
+        <img src="images/part6-m2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Original Geometry, Subdivided Topology for Debugging</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Section III: Shaders</h2>
+
+<h3 align="middle">Part 7: Fun with shaders</h3>
+
+<p>I implemented Phong Shading by following the lecture slides to get the specular, diffuse, and ambient lighting. Then I played around with the coefficients until I got it to look nice. I set p to 100 for a sharp specular shading and chose 1.5 for its coefficient for the same reasons. I set ambient lighting to 1 and used the coefficient to determine that 0.01 for the coefficient looked best. Then, I had a 0.9 coefficient for diffuse as any more would make the specular less noticeable. I also added a reddish color by passing in the parameters (0.6, 0.2, 0.1) for rgb.</p>
+<p>For Environment Map Reflection Shading, I used the reflect function and mapped the coordinates with the concepts behind Mercator Projection.</p>
+<p>For Custom Soap Bubble Shading, I did the same as Environment Map Reflection Shading but overlaid (by multiplying) the colors I got from the reflect function and specular lighting. I then used the colors from the environment map to calculate the alpha and halved the overall alpha since the reflection would be too bright and look less translucent otherwise.</p>
+<p>For 3D Texture Mapping, I used the same spherical projection method as I did in Environment Map Reflection Shading but this time without making it reflect. Then, I added a second material for texture mapping by setting a threshold for the colors that would show up on the mesh, and would otherwise map a different texture. For the porcelain one, I did the same thing as Phong but multiplied the texture over diffuse and ambient, and multiplied specular with the environment map and added them all with a faint environment map.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part7-1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Phong Shading</figcaption>
+      </td>     
+      <td>
+        <img src="images/part7-2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Environment Map Reflection Shading</figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="images/part7-4.png" align="middle" width="500px"/>
+        <figcaption align="middle">Custom Soap Bubble Shading</figcaption>
+      </td>     
+      <td>
+        <img src="images/part7-6.png" align="middle" width="500px"/>
+        <figcaption align="middle">3D Texture Mapping</figcaption>
+      </td>
+    </tr> 
+    <tr>
+      <td>
+        <img src="images/part7-7.png" align="middle" width="500px"/>
+        <figcaption align="middle">3D Texture Mapping with Porcelain Shading</figcaption>
+      </td>     
+      <td>
+        <img src="images/part7-5.png" align="middle" width="500px"/>
+        <figcaption align="middle">3D Texture Mapping with Two Materials</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Section IV: Mesh Competition</h2>
+
+<h3 align="middle">Part 8: Design your own mesh!</h3>
+
+<p>My primary 3D modeling program is Maya so I modeled a deer there then imported it over to Blender to make a .dae file. I had a lot of trouble getting it to work so I went through the provided .dae files to compare the code. Through a lot of parsing by reading and trial and error, I finally got to to work and made a quick tutorial on piazza (@123).</p>
+<p>I made this deer to be specifically stylistically low-poly so that it can be used in Unity without making the framerate too slow. I mainly used a contouring modeling method and extrusions to model each part then stitched together the limbs at the end. I also placed edge loops at specific places where I wanted the edges to be preserved after subdivision, like the ears, joint, and feet.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part8-1.png" align="middle" width="500px"/>
+        <figcaption align="middle">Deer No Subdivision</figcaption>
+      </td>     
+      <td>
+        <img src="images/part8-2.png" align="middle" width="500px"/>
+        <figcaption align="middle">Deer First Level Subdivision</figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="images/part8-3.png" align="middle" width="500px"/>
+        <figcaption align="middle">Deer Second Level Subdivision</figcaption>
+      </td>     
+      <td>
+        <img src="images/part8-4.png" align="middle" width="500px"/>
+        <figcaption align="middle">Deer Two Materials 3D Texture Shading</figcaption>
+      </td>
+    </tr> 
+<div align="middle">
+  <table style="width=100%">
+    <tr>  
+      <td>
+        <img src="images/deerBubble3.gif" align="middle" width="700px"/>
+        <figcaption align="middle">Deer with Soap Bubble Shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>
