@@ -1,0 +1,33 @@
+body {
+  padding: 100px;
+  width: 1000px;
+  margin: auto;
+  text-align: left;
+  font-weight: 300;
+  font-family: 'Open Sans', sans-serif;
+  color: #121212;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Source Sans Pro', sans-serif;
+}
+
+a:link {
+	color: #00ccff;
+    text-decoration: none;
+}
+
+a:visited {
+	color: #cc0066;
+    text-decoration: none;
+}
+
+a:hover {
+	color: #00ffff;
+    text-decoration: none;
+}
+
+a:active {
+	color: #0099cc;
+    text-decoration: none;
+}
