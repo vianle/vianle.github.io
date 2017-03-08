@@ -1,0 +1,336 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Ray Tracing Part 1</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 3-1: Ray Tracing Part 1
+</h1>
+<h2 align="middle">Vi Le, CS184-aaf</h2>
+
+<div>
+
+
+<h2 align="middle">Overview</h2>
+<p>In this project, I implemented a physically-based renderer by using rays of light and bouncing them. First, I had to implement how to create rays and for color to show up when they intersect with a primitive. However, this naive method was too slow so next I implemented a BVH to calculate intersections faster. The next part was about incorporating materials and lighting into the scene. First, I filled out a default diffuse material and implemented direct illumination. After that, I implemented indirect illumination by estimation with the Russian roulette method. Lastly, I implemented adaptive sampling, which enabled us to render with more samples more quickly as the samples that converge quickly will be terminated.</p>
+
+
+<h2 align="middle">Part 1: Ray Generation and Intersection</h2>
+<p>To allow us to see the objects in the scene, I generated rays by sampling random rays and converting the ray in respect to the camera space. Then, I calculated to the intersection of the ray with triangles and spheres in order to tell where objects are and show them shaded with the default normal.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-1.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+<!--     <tr>
+    </tr> -->
+      <td>
+        <img src="images/p1-2.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
+<p>Now we can render and see scenes with little primitives, scenes with many more take horribly long to render. In order to render them, we can speed up the process of checking intersections by preprocessing the primitives into a tree like structure, BVH. </p>
+<p>I constructed the BVH by using the bounding boxes of the centroids of the primitives. I split the primitives by calculating the the axis that passes through the most centroids, calculating the centroid of all the centroids, and putting everything on one side of that axis split by the centroid into the left branch and the rest into the right branch. When the number of primitives on a branch is below how many we want in a leaf, it becomes a leaf. If there's an instance where either branch is empty, I move one primitive from the other branch to the empty one.</p>
+<p>The intersection algorithm for BVH traverses the BVH recursively. If the ray doesn't intersect the bounding box of the primitives in a node, I completely skip them. If the node is a leaf, I check the intersection for each and return if there is one. Then I recurse through the right and left branches of the node and do that same thing all over again. Lastly, after recursing, I return if either of the branches have returned true, meaning there is an intersection.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-2.png" align="middle" width="480px"/>
+        <figcaption align="middle"> </figcaption>
+      </td>
+<!--     <tr>
+    </tr> -->
+      <td>
+        <img src="images/p2-3.png" align="middle" width="480px"/>
+        <figcaption align="middle"> </figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="images/p2-4.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+<!--     <tr>
+    </tr> -->
+      <td>
+        <img src="images/p2-5.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+    </tr>
+
+  </table>
+</div>
+
+<h2 align="middle">Part 3: Direct Illumination</h2>
+<p>For each light in the scene, I take multiple samples of light. For each sample, I check the ray in the opposite direction and if there is an intersection in that direction, this a part of the shadow and I continue without adding the spectrum. If it isn't a part of the shadow, I get the spectrum using the BSDF for that primitive and add that to the total spectrum for all the samples. Then, I average the spectrum for all the samples and return that. </p>
+
+<h3 align="middle">Examples</h2>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-1.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+      <td>
+        <img src="images/p3-2.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+    <tr>
+  </table>
+</div>
+
+<h3 align="middle">Different Light Rays</h2>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/bunny_s1_l1.png" align="middle" width="480px"/>
+        <figcaption align="middle">1 Light Ray</figcaption>
+      </td>
+      <td>
+        <img src="images/bunny_s1_l4.png" align="middle" width="480px"/>
+        <figcaption align="middle">4 Light Rays</figcaption>
+      </td>
+    <tr>
+    </tr> 
+      <td>
+        <img src="images/bunny_s1_l16.png" align="middle" width="480px"/>
+        <figcaption align="middle">16 Light Rays</figcaption>
+      </td>
+      <td>
+        <img src="images/bunny_s1_l64.png" align="middle" width="480px"/>
+        <figcaption align="middle">64 Light Rays</figcaption>
+      </td>      
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">Debugging</h2>
+
+<p>I first got the white outline because of a problem with my intersection in BVH. I aslo had trouble understanding shadows at first thinking I'd have to add a certain color using the shadow ray instead of it being the absence of color. I fixed that by terminating before adding to the spectrum if the shadow ray indicated that it was a shadow.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-mistake2.png" align="middle" width="480px"/>
+        <figcaption align="middle">Intersection Error</figcaption>
+      </td>
+      <td>
+        <img src="images/p3-mistake3.png" align="middle" width="480px"/>
+        <figcaption align="middle">Shadow Error</figcaption>
+      </td>
+    <tr>
+  </table>
+</div>
+
+
+<h2 align="middle">Part 4: Indirect Illumination</h2>
+<p>I implemented indirect illumination through the Russian roulette method. I first take a sample of the spectrum from the BSDF at that primitive and calculate the probability of continuing to sample the light, letting it bounce, based off of the reflectance. If we continue to sample the light, I call trace_ray, which calls this function, and recursively bounce the light until it terminates based on the Russian roulette probability. </p>
+
+<h3 align="middle">Examples</h2>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/banana.png" align="middle" width="480px"/>
+        <figcaption align="middle">Provided Banana</figcaption>
+      </td>
+      <td>
+        <img src="images/isohedrons.png" align="middle" width="480px"/>
+        <figcaption align="middle">Custom Soft Lit Icosahedrons</figcaption>
+      </td>
+    <tr>
+  </table>
+</div>
+
+<h3 align="middle">Difference Direct and Indirect</h2>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-direct.png" align="middle" width="480px"/>
+        <figcaption align="middle">Direct Illumination Only</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-indirect.png" align="middle" width="480px"/>
+        <figcaption align="middle">Indirect Illumination Only</figcaption>
+      </td>
+    <tr>
+  </table>
+</div>
+<h3 align="middle">Different Max Ray Depth</h2>
+<div align="middle">
+  <table style="width=100%">      
+    </tr> 
+      <td>
+        <img src="images/p4-m0.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max Ray Depth 0</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-m1.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max Ray Depth 1</figcaption>
+      </td>      
+    <tr>
+    </tr> 
+      <td>
+        <img src="images/p4-m2.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max Ray Depth 2</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-m3.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max Ray Depth 3</figcaption>
+      </td>  
+    <tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">      
+    </tr> 
+      <td>
+        <img src="images/p4-m100.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max Ray Depth 100</figcaption>
+      </td>
+    <tr>
+  </table>
+</div>
+<h3 align="middle">Different Sample-Per-Pixel Rates</h2>
+
+<div align="middle">
+  <table style="width=100%">      
+    </tr> 
+      <td>
+        <img src="images/p4-s1.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 1</figcaption>
+      </td>  
+      <td>
+        <img src="images/p4-s2.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 2</figcaption>
+      </td>
+    <tr>
+    </tr> 
+      <td>
+        <img src="images/p4-s4.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 4</figcaption>
+      </td>  
+      <td>
+        <img src="images/p4-s8.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 8</figcaption>
+      </td>
+    <tr>
+    </tr> 
+      <td>
+        <img src="images/p4-s16.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 16</figcaption>
+      </td>  
+      <td>
+        <img src="images/p4-s64.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 64</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-s1024.png" align="middle" width="480px"/>
+        <figcaption align="middle">Sample-Per-Pixel Rate 1024</figcaption>
+      </td>  
+    </tr>
+  </table>
+</div>
+
+
+
+<h2 align="middle">Part 5: Adaptive Sampling</h2>
+<p>I implemented adaptive sampling based on when the samples converge. However, we do not wnat to check if they converge at every step so we use samplesPerBatch to check for convergence only after that many samples. At this check, I calculate the mean and standard deviation using the sum of the samples up to this point and the sum of the square of the samples up to this point. Then, I can use them to check if the convergence variable I, where I is (1.96 * standard deviation) / square root(number of samples) based on confidence intervals, is at most the maxTolerance * mean. If it is, I break out of the loop, stop sampling, and return the average over the samples we already have.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p5-1.png" align="middle" width="480px"/>
+        <figcaption align="middle">CBbunny.dae at 2048 Samples</figcaption>
+      </td>
+<!--     <tr>
+    </tr> -->
+      <td>
+        <img src="images/p5-2.png" align="middle" width="480px"/>
+        <figcaption align="middle">CBbunny.dae at 2048 Samples Rate</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h2 align="middle">Competition</h2>
+<p>I sculpted this goblin in Sculptris, which is a free sculpting program very similar to Blender but with a more simplistic UI. I purposely made this high-poly and added lumpy details to the goblin's skin, like the lumps on the nose. I found that the useful thing about digital sculpting is that you can turn on symmetry so I did that. After I finished sculpting, I imported it into blender to create a .dae file, which included fixing the camera and adding lights to make this creature look a bit more intimidating. This was rendered with 64 samples and 4 light rays.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/goblin.png" align="middle" width="100%"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+
+    </tr>
+  </table>
+</div>
+
+<!--         <p>Here is an example of how to include a simple formula:</p>
+        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
+        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
+        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
+ -->
+
+
+<!--     <h2 align="middle">A Few Notes On Webpages</h2>
+        <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
+        <ul>
+        <li>Your main report page should be called index.html.</li>
+        <li>Be sure to include and turn in all of the other files (such as images) that are linked in your report!</li>
+        <li>Use only <em>relative</em> paths to files, such as <pre>"./images/image.jpg"</pre>
+        Do <em>NOT</em> use absolute paths, such as <pre>"/Users/student/Desktop/image.jpg"</pre></li>
+        <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
+        <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
+        <li>And again, test your website on the instructional machines early!</li>
+ --></div>
+</body>
+</html>
+
+
+
+
