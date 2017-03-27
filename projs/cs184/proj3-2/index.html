@@ -1,0 +1,383 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script><style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Ray Tracer, Part 2</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 3-2: Ray Tracer, Part 2</h1>
+<h2 align="middle">Vi Le, CS184-aaf</h2>
+<td>
+  <img src="images/title.png" align="right" width="480px"/>
+</td>
+<br><br>
+
+
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>This project was a continuation of the last where we had to make a physicaly based renderer. The main focus of this part was working with different materials and how things looked. The first part was about implementing reflection and refraction in our BSDF in order to render materials like mirrors and glass. The second was to work with microfacets to render things with a smoother or rougher surface. In the third part, we worked with environment mapping which enabled us to reflect the environment light onto our reflective materials. Lasty, in part 4, we played around with how things looked to us, the viewer on the other side of the camera, by simulating a lense for a camera and creating depth of field.</p>
+
+<br><br>
+
+
+<h2 align="middle">Part 1: Mirror and Glass Materials</h2>
+
+<p>The BSDF for a default reflection was already implemented but since I used it later with a non-default normal, I had to implement it anyway using the equation below: </p>
+
+$$\omega_i+\omega_o = 2(\omega_o\cdot n)n$$
+
+<p>By using Snell's equations, the refractive index, and the in and out vectors that represent how sampling works, I implemented a refraction function by using the equations below: </p>
+
+$$\omega_i.x = -\eta \omega_o.x, \quad\omega_i.y = -\eta \omega_o.y, ,\quad \omega_i.z = \mp \sqrt{1-\eta^2(1-\omega_o.z^2)}$$
+
+<p>Then by using both the reflection and refraction equations, I implemented the glass BSDF. I used Schlick's approximation to calculate the probability if a sample will be reflected or refracted. As shown below, the more the lights are allowed to bounce, the more reflection and refraction we get. Reflection requires at least 1 bounce and refraction requires at least 2 but the quality of the minimum bounces to see the presence of these materials is not desirable.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-m0.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 0</figcaption>
+      </td>
+      <td>
+        <img src="images/p1-m1.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 1</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-m2.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 2</figcaption>
+      </td>
+      <td>
+        <img src="images/p1-m3.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 3</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-m4.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 4</figcaption>
+      </td>
+      <td>
+        <img src="images/p1-m5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 5</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-m6.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 6</figcaption>
+      </td>
+      <td>
+        <img src="images/p1-m100.png" align="middle" width="480px"/>
+        <figcaption align="middle">Max ray depth 100</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br><br>
+
+
+<h2 align="middle">Part 2: Microfacet Material</h2>
+
+<p>I implemented the microfacet BSDF using the Fresnel term (F), the shadow masking term (G), the normal distribution (D) and the normals of the macrofacet (n) which are fixed at (0 0 1) used to normalize. The equation below shows how these terms make up the spectrum we return: </p>
+
+$$f=\frac{F(\omega_i) \cdot G(\omega_o, \omega_i) \cdot D(h)}{4 \cdot (n\cdot\omega_o) \cdot (n\cdot\omega_i)}$$
+
+<p>The Fresnel and normal distribution terms can be calculated with these equations:</p>
+
+$$F=\frac{R_s+R_p}{2},~~
+R_s=\frac{(\eta^2+k^2)-2\eta\cos\theta_i+\cos^2\theta_i}{(\eta^2+k^2)+2\eta\cos\theta_i+\cos^2\theta_i},~~
+R_p=\frac{(\eta^2+k^2)\cos^2\theta_i-2\eta\cos\theta_i+1}{(\eta^2+k^2)\cos^2\theta_i+2\eta\cos\theta_i+1}$$
+
+$$D(h)=\frac{e^{-\tan^2\theta_h/\alpha^2}}{\pi\alpha^2\cos^4\theta_h}$$
+
+<p>After calculating these terms, I implemented importance sampling because the current uniform sampling requires many samples before it starts to converge. I calculate appropriate probability density functions for the Beckman normal distribution function and use the inversion method with integration in order to sample from them. After having these samples, I can get the half vector and since I have the out vector, I can get the in vector by reflecting it over the half vector. With this, I can calculate the PDF in relation to the in vector. In this process, I also check the that samples I got were within bounds and that the half vector was valid. If they weren't I'd return a PDF of 0 and an empty spectrum.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-dragon-0.005.png" align="middle" width="480px"/>
+        <figcaption align="middle">Alpha 0.005</figcaption>
+      </td>
+      <td>
+        <img src="images/p2-dragon-0.05.png" align="middle" width="480px"/>
+        <figcaption align="middle">Alpha 0.05</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-dragon-0.25.png" align="middle" width="480px"/>
+        <figcaption align="middle">Alpha 0.25</figcaption>
+      </td>
+      <td>
+        <img src="images/p2-dragon-0.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Alpha 0.5</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>The alphas here control the roughness of these microfacets.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-bunny-uniform.png" align="middle" width="480px"/>
+        <figcaption align="middle">Uniform sampling</figcaption>
+      </td>
+      <td>
+        <img src="images/p2-bunny-importance.png" align="middle" width="480px"/>
+        <figcaption align="middle">Importance sampling</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>Uniform sampling here looks more noisy and darker because it needs more samples to converge than importance sampling does.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-custom-ag.png" align="middle" width="480px"/>
+        <figcaption align="middle">Silver material</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">Debugging journey</h3>
+
+<p>I made plenty of mistakes with conditions and don't quite remember each case. However, these were likely the results of checking conditions incorrectly (most likely related to checking for a valid half vector), using the wrong reflection, or switching cos and sin when calculating the half vector.<p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-m1.png" align="middle" width="480px"/>
+      </td>
+      <td>
+        <img src="images/p2-m2.png" align="middle" width="480px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+
+<h2 align="middle">Part 3: Environment Light</h2>
+
+<p>I first mapped the environment light into object using uniform sampling by random samples from a sphere to make a direction and look that up in a texture map. However, uniform sampling again takes a lot of samples to converge so the next step is to implement importance sampling. First, I computed the probability density function for each height and width. Then, using that PDF, I computed the marginal distribution and conditional distribution. Both of these were summations that depended on a cumulative sum up to that point so to optimize, I referenced a previous value instead of recomputing it, unlike the mathematical equations. Lastly, I had to sample by first  getting samples from the environment map then using the std::upper_bound() function to get the sample for y from the marginal distribution and get the sample for x from the conditional distribution. After this step, I did the same as I did in uniform sampling in order to complete importance sampling.</p>
+
+<p> These are the equations for the probability density function, marginal distribution, and conditional distribution, respectively: </p>
+
+$$p(x,y) = \frac{E[\lfloor x \rfloor,\lfloor y \rfloor] \sin (\pi \lfloor y \rfloor/h)}{\sum_{i',j'} E[i',j'] \sin (\pi j'/h)}.$$
+
+$$F(j) = \sum_{j'=0}^j \sum_{i=0}^{w-1} p(i,j')$$
+
+$$F(i|j) = P(x < i | y = j) = \int_0^i p(x|y=j) dx = \int_0^i \frac{p(x,j)}{p(j)} dx = \sum_{i'=0}^{i-1}  \frac{p(i',j)}{p(j)} .$$
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/grace.png" align="middle" width="960px"/>
+        <figcaption align="middle">grace.exr used for environment</figcaption>
+      </td>
+    <tr>
+    </tr>
+      <td>
+        <img src="images/probability_debug-grace.png" align="middle" width="960px"/>
+        <figcaption align="middle">Visualization of probability density for grace.exr</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-bunny-grace-uniform.png" align="middle" width="480px"/>
+        <figcaption align="middle">Uniform sampling on bunny unlit</figcaption>
+      </td>
+      <td>
+        <img src="images/p3-bunny-grace-importance.png" align="middle" width="480px"/>
+        <figcaption align="middle">Importance sampling on bunny unlit</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-bunny-grace-uniform-microfacet.png" align="middle" width="480px"/>
+        <figcaption align="middle">Uniform sampling on bunny microfacet</figcaption>
+      </td>
+      <td>
+        <img src="images/p3-bunny-grace-importance-microfacet.png" align="middle" width="480px"/>
+        <figcaption align="middle">Importance sampling on bunny microfacet</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<p>Uniform sampling takes more samples to converge so at the same settings, it is more noisy than importance sampling. The difference in brightness can also be explained by uniform sampling needing more samples to converge, often starting out very dark with little samples. This had also been apparent in part 1. </p>
+
+<h3 align="middle">Debugging journey</h3>
+
+<p>While I was testing this bunny in the field environment, the probability density was messed up and I couldn't figure out why. After trying everything, I changed a float I had to a double and everything worked.<p>
+
+  <div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/field-prob.png" align="middle" width="500px"/>
+        <figcaption align="middle">(correct) Visualization of probability density for field.exr</figcaption>
+      </td>
+<!--     <tr>
+    </tr> -->
+      <td>
+        <img src="images/p3-m1.png" align="middle" width="500px"/>
+        <figcaption align="middle">(incorrect) Error using float instead of double</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-bunny-field-importance-microfacet.png" align="middle" width="480px"/>
+        <figcaption align="middle">What I was trying to render</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+
+<h2 align="middle">Part 4: Depth of Field</h2>
+
+<div align="right">
+      <td>
+        <img src="images/p4-1.jpg" align="right" width="480px"/>
+      </td>
+</div>
+
+<p>I first sampled uniformly on the lens by using a random radius and theta then square rooting them to make up for how sampling randomly on a circle is not uniform. Then, to get the red segment on the diagram, I calculated the ray the same was as if I had a pinhole camera. With that red segment, I can now find the point of focus, which is where the segment intersects the focal distance on the z-axis. (This is just multiplying the direction of the red segment by the negative focal distance over the the z-coordinate of the direction.) Then I made the blue segment a ray with the origin at the sample on the lens and the direction being the sample on the lens to the point of focus. This is the ray that we want for the depth of field to work so I convert the blue segment ray to world and return that, similarly to what we did for the pinhole camera.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-dragon-b0.03-d0.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.03 and Depth 0.5</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-dragon-b0.03-d1.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.03 and Depth 1</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-dragon-b0.03-d1.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.03 and Depth 1.5</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-dragon-b0.03-d2.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.03 and Depth 2</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>At a depth of 0.5, we cannot focus on the dragon. At 1, we become more focused but not quite. At 1.5, we can now focus on the front of the dragon and the tail is blurry. At 2, we now focus on the tail and not the front, which becomes more blurry.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-dragon-b0.005-d1.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.005 and Depth 1.5</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-dragon-b0.05-d1.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.05 and Depth 1.5</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-dragon-b0.1-d1.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.1 and Depth 1.5</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-dragon-b0.5-d1.5.png" align="middle" width="480px"/>
+        <figcaption align="middle">Aperture 0.5 and Depth 1.5</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>For aperture variation, we are focused at the front of the dragon. At aperture of 0.005, we are nearly at a pinhole camera so the image is very clear. At 0.05, we see the tail becomes blurry. At 0.1, the tail becomes even more blurry. At 0.5, the tail is so blurry we may not even be able to see that it is a tail, however, the front still retains its form.</p>
+
+
+</div>
+</body>
+</html>
