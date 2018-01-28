@@ -1,0 +1,350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+<script type="text/javascript"
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script><style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 194-26: [Auto]Stitching Photo Mosaics</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+
+<h1 align="middle">CS194-26: Image Manipulation and Computational Photography, Fall 2017</h1>
+<h1 align="middle">Project 6A: Image Warping and Mosiacing
+</h1>
+<h2 align="middle">Vi Le, CS194-26-abj</h2>
+
+<div>
+<br><br>
+
+
+<h2 align="middle">Part A Overview</h2>
+<p>The goal of this project is to automatically stitch together images, much like the concept of taking a creating a panorama using your phone by taking multiple pictures. To start, we would first manually define corresponding points to find the homographies and use them to warp an image to match the other. However, the minor differences in lighting and texture may prevent it from looking authentic. By mosiacing the images, we can make it look more seamless. This setup helps in starting the autostitching in part B.</p>
+
+
+<br><br>
+<h2 align="middle">Shoot the Pictures</h2>
+<p>These are a couple images I shot from my phone. Since I didn't have a tripod, I tried my best to rotate the camera in place. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/pix1.jpg" align="middle" width="240px"/>
+        <img src="./images/pix2.jpg" align="middle" width="240px"/>
+        <figcaption align="middle">Pixar at Night</figcaption>   
+      </td>
+      <td>
+        <img src="./images/small/roof1.jpg" align="middle" width="240px"/>
+        <img src="./images/small/roof2.jpg" align="middle" width="240px"/>
+        <figcaption align="middle">Rooftop</figcaption>   
+      </td>
+    </tr> 
+    <tr>
+      <td>
+        <img src="./images/small/roof3.jpg" align="middle" width="240px"/>
+        <img src="./images/small/roof4.jpg" align="middle" width="240px"/>
+        <figcaption align="middle">Rooftop</figcaption>   
+      </td>
+      <td>
+        <img src="./images/small/hall1.jpg" align="middle" width="240px"/>
+        <img src="./images/small/hall2.jpg" align="middle" width="240px"/>
+        <figcaption align="middle">Hallway</figcaption>   
+      </td>
+    </tr>     
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Recover Homographies</h2>
+<p>To recover the homography, we need many points and the forumla below:</p>
+<p>$H = \begin{bmatrix}a & b & c \\ d & e & f \\ g & h & 1\end{bmatrix} \longrightarrow \begin{bmatrix}a & b & c \\ d & e & f \\ g & h & 1\end{bmatrix} \begin{bmatrix}x \\ y \\ 1\end{bmatrix} = \begin{bmatrix}wx' \\ wy' \\ w\end{bmatrix}$</p>
+<br>
+<p>We let $H$ be the homography $(x, y)$ be the the point from the image we want to warp, $(x', y')$ be the point on the image we want to match,and $ w $ be a scalar</p>
+
+<p>We can then put it in the form of $Ax=b$ so that we can solve for $x$. We can also solve for multiple points to increase accuracy.</p>
+<br><p>$\begin{bmatrix} 
+  x_1 & y_1 & 1 & 0 & 0 & 0 & -x_1x_1' & -y_1x_1' \\ 
+  0 & 0 & 0 & x_1 & y_1 & 1 & -x_1y_1' & -y_1y_1' \\
+  x_2 & y_2 & 1 & 0 & 0 & 0 & -x_2x_2' & -y_2x_2' \\ 
+  0 & 0 & 0 & x_2 & y_2 & 1 & -x_2y_2' & -y_2y_2' \\
+  x_3 & y_3 & 1 & 0 & 0 & 0 & -x_3x_3' & -y_3x_3' \\ 
+  0 & 0 & 0 & x_3 & y_3 & 1 & -x_3y_3' & -y_3y_3' \\
+  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+  x_n & y_n & 1 & 0 & 0 & 0 & -x_nx_n' & -y_nx_n' \\ 
+  0 & 0 & 0 & x_n & y_n & 1 & -x_ny_n' & -y_ny_n' \\
+  \end{bmatrix} \begin{bmatrix}a \\ b \\ c \\ d \\ e \\ f \\ g \\ h \end{bmatrix} = \begin{bmatrix}x_1' \\ y_1' \\ x_2' \\ y_2' \\ x_3' \\ y_3' \\ \vdots \\ x_n' \\ y_n' \\ \end{bmatrix}$</p>
+
+<br><br>
+<h2 align="middle">Warp the Images</h2>
+<p>We can warp the image much like in project 4 by using inverse warping. While I have implemented my own warping function, I recently found in piazza that we can use sk.transform.warp, which is much faster. I then mask the warped image and add it to the one we want to match. While things do match up, the seam seems pretty visible</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/pix1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/pix2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/warp1.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+    <tr>
+      <td>
+        <img src="./images/small/roof1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/small/roof2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/warp2.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+
+<br><br>
+
+<br><br>
+<h2 align="middle">Image Rectification</h2>
+<p>For image rectification, we only need 4 points to define the item we want and the plane we will project it onto. There only needs to be one image since we don't need to match it to anything other than a plane.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/small/book.jpg" align="middle" height="240px"/>
+      </td>
+      <td>
+        <img src="./out/plane1.jpg" align="middle" height="240px"/>
+      </td>
+      <td>
+        <img src="./images/small/paint.jpg" align="middle" height="240px"/>
+      </td>
+      <td>
+        <img src="./out/plane2.jpg" align="middle" height="240px"/>
+      </td>
+    </tr> 
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/small/games.jpg" align="middle" height="240px"/>
+      </td>
+      <td>
+        <img src="./out/plane3.jpg" align="middle" height="240px"/>
+      </td>
+      <td>
+        <img src="./images/small/altoids.jpg" align="middle" height="240px"/>
+      </td>
+      <td>
+        <img src="./out/plane4.jpg" align="middle" height="240px"/>
+      </td>
+    </tr>     
+  </table>
+</div>
+
+<br><br>
+<h2 align="middle">Blend the images into a mosaic</h2>
+<p>To get rid of the seam from before, we can blend the images to create a better mosaic. First we find the binary mask of the intersection. Then we weight the mask non-uniformly so that from right to left so that the drop-off is larger near the seam. Using the weighted mask, we can add the two images in the intersection each wth different weights, resulting in a gradual blend.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/pix1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/pix2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/mos2.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+    <tr>
+      <td>
+        <img src="./images/small/roof1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/small/roof2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/mos5.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+    <tr>
+      <td>
+        <img src="./images/small/hall1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/small/hall2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/mos6.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/small/roof3.jpg" align="middle" height="310px"/>
+      </td>
+      <td>
+        <img src="./images/small/roof4.jpg" align="middle" height="310px"/>
+      </td>
+      <td>
+        <img src="./out/mos7.jpg" align="middle" height="310px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+<br><br>
+<h2 align="middle"> Tell us what you've learned</h2>
+<p>I've learned the impoprtance of taking pictures steadily since a good batch of my photos actually didn't work out too well. In terms of technical knowledge, I've learned a bit more abotu transformations and how to navigate around that especially since there were transformations into negative space that didn't translate well into image indices. And as always, I'm learning so many different applications through the functions we write. For example, we're using rectification as a warping check even when it can be an entirely different application (like replacing planar objects--switching the cover of a magazine with the cover of the board game). </p>
+
+
+<br><br>
+<br><br>
+<br><br>
+<h2 align="middle">Part B Overview</h2>
+<p>In this part, we use corner detection and feature matching in order to automatically stitch images together as opposed to our manual way of picking points in the previous part. While very useful, the results tend to vary depending on which points are picked and as a result which homography is favored.</p>
+
+<br><br>
+<h2 align="middle">Detecting corner features in an image</h2>
+<p>To detect the corners in an image, we use the Harris corner detection algorithm provided by harris.py to detect the corners in an image. I switched out peak_local_max (results seen in the first two images below) for corner_peaks (results seen in the last two images below) as I read that it was okay on Piazza and resulted in my code being overall faster.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./out/auto/pix1-harris1.png" align="middle" height="330px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix2-harris1.png" align="middle" height="330px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix1-harris2.png" align="middle" height="330px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix2-harris2.png" align="middle" height="330px"/>
+      </td>
+    </tr>     
+  </table>
+</div>
+
+
+
+<br><br>
+<h2 align="middle">Extracting a Feature Descriptor for each feature point</h2>
+<p>We use the Adaptive Non-Maximal Suppression method as specified in the MOPS paper to select the strongest corners detected. For each Harris corner in one images, we find the distance from it to each of the Harris corners in the image we want to match it to. If it's strength is much stronger than the corner we compare it with, we take the distance and record it as the new minimum if it is smaller than it was previously. Afterwards, we select a number of points with the largest minimum distance. In this case, it is 500, which is seen to be more spread out with the peak_local_max in the Harris detector since there are more points needed. (The first two images below) In the current case (the second two images below), that is most of the points, which is why they are closer together. </p>
+
+<div align="middle">
+  <table style="width=100%">    
+    <tr>
+      <td>
+        <img src="./out/auto/pix1-surp.png" align="middle" height="330px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix2-surp.png" align="middle" height="330px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix1-chosen.png" align="middle" height="330px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix2-chosen.png" align="middle" height="330px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+<br><br>
+<h2 align="middle">Matching these feature descriptors between two images</h2>
+<p>For each point that we chose through ANMS, we take a 40x40 patch centered around the point to use as our feature descriptor. We then get rid of the high frequency and downsample it to an 8x8 patch.</p>
+<p>Then, we calculate the distance between each feature and get the two nearest neighbors in terms of the distance. If the ratio between the nearest neight and second nearest neighter is smaller than a specifed threshold, we make the nearest neighbor we found a match.</p>
+
+<div align="middle">
+  <table style="width=100%">    
+    <tr>
+      <td>
+        <img src="./out/auto/pix1-matches.png" align="middle" height="480px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix2-matches.png" align="middle" height="480px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+
+
+<br><br>
+<h2 align="middle">Use a robust method (RANSAC) to compute a homography</h2>
+<p>To compute the homography, we use RANSAC to iterate through a good number of possibilites. We select 4 points at random and compute the homography. Then, we calculate the distance between them. If they are considered an inlier (their values are under a certain threshold), they are stored. Afterwards, we compare the inliers and for each homography and select the homography with the most.</p>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/pix1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/pix2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/auto/pix-auto.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+    <tr>
+      <td>
+        <img src="./images/small/roof1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/small/roof2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/auto/roof-auto.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+    <tr>
+      <td>
+        <img src="./images/small/city1.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/small/city2.jpg" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./out/auto/city.jpg" align="middle" height="360px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+<h2 align="middle"> Tell us what you've learned</h2>
+<p>Some of the results are not as good as manual picking and I completely understand why. When I was manually picking, I found it hard to pick points as well and because of that had to pick points over an over. This must be especially hard with the variance in my pictures and the precision I lost taking them from just my cellphone. I've learned that this project basically picks points better than I can. I guess I've learned that I'm very stupid, but that's really nothing new. </p>

@@ -1,0 +1,244 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 194-26: Images of the Russian Empire: Colorizing the Prokudin-Gorskii photo collection</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+
+<h1 align="middle">CS194-26: Image Manipulation and Computational Photography, Fall 2017</h1>
+<h1 align="middle">Project 4: Face Morphing
+</h1>
+<h2 align="middle">Vi Le, CS194-26-abj</h2>
+
+<div>
+<br><br>
+
+
+<h2 align="middle">Overview</h2>
+<p>In this project, we first use image shape warping to morph faces by warping their structure and shape. Then, to get the right colors, we cross dissolving to produce the resulting morphs of faces. We can produce a sequence by morphing the faces at different fractions and tie them together into an animated version. </p>
+
+
+<br><br>
+<h2 align="middle">Defining Correspondences</h2>
+<p>First, for each of the two images that will be morphed, we define corresponding key points. Then, using these faces, we provide a Delaunay triangulation in order to map corresponding triangles from both images for later image shape warping.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/tri/damma_A.png" align="middle" height="480px"/>
+      </td>
+      <td>
+        <img src="./images/tri/damma_B.png" align="middle" height="480px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Computing the "Mid-way Face"</h2>
+<p>Computing the "mid-way" face involves computing the average points between each pair of points in both images, warping both faces into the shape of the midway, which is defined by the midpoints, and averaging the colors. Computing the average points is just taking the midpoint of the pair of corresponding points. The image shape warping involves computing the affine transformation matrix by using two matrices composed of the set of 3 points defining the triangle we are trying to morph from and the set from the triangles we are trying to morph to. Using this matrix, we can map the pixels in the result from the image we morphed from. After generating the two image shape warped images, we can blend the colors between them by adding them each with half the instensity of each color.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/tri/damma_A.png" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/tri/damma_mid.png" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/tri/damma_B.png" align="middle" height="360px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+<br><br>
+
+
+<h2 align="middle">The Morph Sequence</h2>
+<p>In this part, we generate a sequences of images in order to show the morphing sequences. Instead of the midpoint of the pairs of points, we can weight the distance from each point using the fraction of the frame in the morphing sequence. Using this, we continue to trianglate and image shape warp the same way as before. As for the cross-dossolving, we just weight the intensity of colors by the fraction of the frame in the morphing sequence. The results are shown below, with the video being the actual deliverable. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/angemma-small.gif" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/emeorge-small.gif" align="middle" height="360px"/>
+      </td>
+      <td>
+        <img src="./images/hptrio-small.gif" align="middle" height="360px"/>
+      </td>
+    </tr>      
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <iframe align="middle" width="560" height="315" src="https://www.youtube.com/embed/U3O5vweP81Q?ecver=1" frameborder="0" allowfullscreen></iframe>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+
+<br><br>
+
+<br><br>
+<h2 align="middle">The "Mean face" of a population</h2>
+<p>I chose to average the faces of 30 males from the IMM Face Database. The image type I chose was the full frontal face with a "happy" expression and difuse light.</p>
+<p>Credits: M. B. Stegmann, B. K. Ersboll, and R. Larsen. FAME - a flexible appearance modelling
+environment. IEEE Trans. on Medical Imaging, 22(10):1319{1331, 2003</p>
+
+<h3 align="middle">Average face shape of the male population</h3>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/tri/avg.png" align="middle" width="480px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3 align="middle">Morphed into the average shape</h3>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/avg/01-2m.jpg" align="middle" width="240px"/>
+      </td>
+      <td>
+        <img src="./images/avg/40.png" align="middle" width="240px"/>
+      </td>
+      <td>
+        <img src="./images/avg/05-2m.jpg" align="middle" width="240px"/>
+      </td>
+      <td>
+        <img src="./images/avg/41.png" align="middle" width="240px"/>
+      </td>
+    </tr>  
+    <tr>
+      <td>
+        <img src="./images/avg/06-2m.jpg" align="middle" width="240px"/>
+      </td>
+      <td>
+        <img src="./images/avg/42.png" align="middle" width="240px"/>
+      </td>
+      <td>
+        <img src="./images/avg/07-2m.jpg" align="middle" width="240px"/>
+      </td>
+      <td>
+        <img src="./images/avg/43.png" align="middle" width="240px"/>
+      </td>
+    </tr>  
+  </table>
+</div>
+
+<h3 align="middle">Average face of the population</h3>
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/avg.png" align="middle" width="480px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<br><br>
+<h2 align="middle">Caricatures: Extrapolating from the mean</h2>
+<p>Here is my face morphed with the male population average and extrapolated from it by weighting in the opposite direction.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/avg.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Male Population</figcaption>
+      </td>
+      <td>
+        <img src="./images/c1.png" align="middle" width="100%"/>
+        <figcaption align="middle">Male Me</figcaption>
+      </td>
+      <td>
+        <img src="./images/me.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Me</figcaption>
+      </td>
+      <td>
+        <img src="./images/c2.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Less Male Me</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+<h2 align="middle">Bells and Whistles</h2>
+<p>This is my friend Isabel Zhang being morphed from a smily happy Isabel to a frowning one.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/isabel.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Isabel</figcaption>
+      </td>
+      <td>
+        <img src="./images/isafrown_A.gif" align="middle" width="100%"/>
+        <figcaption align="middle">Isabel Shape Morph</figcaption>
+      </td>
+      <td>
+        <img src="./images/isafrown_B.gif" align="middle" width="100%"/>
+        <figcaption align="middle">Frown Shape Morph</figcaption>
+      </td>
+      <td>
+        <img src="./images/frown.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Average Frown</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/isafrown_color.gif" align="middle" width="100%"/>
+        <figcaption align="middle">Appearance Morph</figcaption>
+      </td>
+      <td>
+        <img src="./images/isafrown.gif" align="middle" width="100%"/>
+        <figcaption align="middle">Full Morphing Sequence</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+

@@ -1,0 +1,544 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 194-26: Images of the Russian Empire: Colorizing the Prokudin-Gorskii photo collection</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+
+<h1 align="middle">CS194-26: Image Manipulation and Computational Photography, Fall 2017</h1>
+<h1 align="middle">Project 3: Fun with Frequencies and Gradients!
+</h1>
+<h2 align="middle">Vi Le, CS194-26-abj</h2>
+
+<div>
+<br><br>
+
+
+<h2 align="middle">Overview</h2>
+<p>This project uses the concept of high and low pass filters to do image editing such as sharpen or blur, and then applies it to how it affects human perception of an image. Using these concepts, we implement ways to blend together images, such as using just the frequencies of the images themsevles or gradually use them with several levels of each filter. Ultimately, we adopt another method to blend images using gradients.</p>
+
+<p>Note:
+There are very many intermediate images especially with the stacks. Many of them were not included in the website due to space constraints but can be viewed through Google Drive <A HREF="http://www.loc.gov/pictures/collection/prok/item/prk2000000209/"> here</A>.</p>
+
+<br><br>
+<h2 align="middle">Part 1.1 Warmup</h2>
+<p>To sharpen and image, I first blurred it with a gaussian filter with a sigma of 3. I then get the high pass filter by subtracting the blurred image from the original image and add that result to the original image. This results in a sharpened image because of the emphasis on the high pass elements which we percieve as a more defined edge.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/source/isabelle.jpg" align="middle" height="240px"/>
+        <figcaption align="middle">Original</figcaption>
+      </td>
+      <td>
+        <img src="./images/sharpen/isa.png" align="middle" height="240px"/>
+        <figcaption align="middle">Sharpened</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/painted.jpg" align="middle" height="240px"/>
+        <figcaption align="middle">Original</figcaption>
+      </td>
+      <td>
+        <img src="./images/sharpen/painted.png" align="middle" height="240px"/>
+        <figcaption align="middle">Sharpened</figcaption>
+      </td>
+      <td>
+        <img src="./penguin-chick.jpg" align="middle" height="240px"/>
+        <figcaption align="middle">Original</figcaption>
+      </td>
+      <td>
+        <img src="./images/sharpen/pengiun.png" align="middle" height="240px"/>
+        <figcaption align="middle">Sharpened</figcaption>
+      </td>
+    </tr>      
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Part 1.2: Hybrid Images</h2>
+<p>A hybrid image can be created by adding the high pass of one image to the low pass image of another. From afar you can then see the low pass image and from up close, the high pass image.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/hybrid/chickmeg.png" align="middle" height="480px"/>
+      </td>
+      <td>
+        <img src="./images/hybrid/derekisa.png" align="middle" height="480px"/>
+      </td>
+    </tr>  
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/hybrid/girl.png" align="middle" height="480px"/>
+      </td>
+      <td>
+        <img src="./images/hybrid/derekmeg.png" align="middle" height="480px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br><br>
+
+<h2 align="left">Failure Case</h2>
+<p>In this case, the hybrid was a failure since Hank and McQueen don't look remotely similar enough where the high pass would give it enough detail to look anything like just Hank in the image. McQueen's low pass is also unfitting for this hybrid since the general shape of him, which is very defined, is very different from Hank so unless the low pass is blurry enough to make that shape more ambiguous, this will fail. If the low pass is that blurry, McQueen probably can't be seen from afar either, which is also a failure.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/hybrid/octocar.png" align="middle" height="480px"/>
+      </td>
+    </tr>
+  </table>
+</div>
+<br><br>
+
+<h2 align="middle">Part 1.3: Gaussian and Laplacian Stacks</h2>
+<p>Each Laplacian level is created from the difference between the Gaussian levels. In the images below, the sigma values are increasing powers of 2. The Laplacians below are very dark, however the image is more visiable if you view the image in a new tab.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/stack/nutmeg-gaussian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-gaussian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-gaussian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-gaussian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-gaussian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-gaussian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr>  
+    <tr>
+      <td>
+        <img src="./images/stack/nutmeg-laplacian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-laplacian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-laplacian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-laplacian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-laplacian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/nutmeg-laplacian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr> 
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/stack/lincoln-gaussian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-gaussian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-gaussian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-gaussian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-gaussian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-gaussian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr>  
+    <tr>
+      <td>
+        <img src="./images/stack/lincoln-laplacian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-laplacian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-laplacian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-laplacian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-laplacian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/lincoln-laplacian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr> 
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/stack/derek-gaussian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-gaussian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-gaussian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-gaussian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-gaussian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-gaussian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr>  
+    <tr>
+      <td>
+        <img src="./images/stack/derek-laplacian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-laplacian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-laplacian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-laplacian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-laplacian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/stack/derek-laplacian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr>  
+  </table>
+</div>
+
+<br><br>
+<h2 align="middle">Part 1.4: Multiresolution Blending</h2>
+<p>For blending two images, we must create a Gaussian and Laplacian stack for each. Then, at each level of the stack, we do a Gaussian filter of the same sigma over the mask and mask it over the Laplacians for that level. We must also create the final image of the two images unblended using the original mask. Finally, we create a Gaussian stack for our final image, take the last image, and sum it all together with the masked Laplacians from both images. Laplacians are the difference between Gaussian blurring levels so adding them back should give a clear image except for where our mask is not completely black, which is the seam. This results in a very well blended seam. Below are some examples. IF you woould like to view more of the stacks than show below, please refer to the Google Drive link in the overview note above.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./apple.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Apple</figcaption>
+      </td>
+      <td>
+        <img src="./oraple_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./orange.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Orange</figcaption>
+      </td>
+      <td>
+        <img src="./images/blend/oraple.png" align="middle" width="100%"/>
+        <figcaption align="middle">Oraple</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/blend/oraple-gaussian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-gaussian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-gaussian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-gaussian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-gaussian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-gaussian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr>  
+    <tr>
+      <td>
+        <img src="./images/blend/oraple-laplacian-0.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-laplacian-1.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-laplacian-2.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-laplacian-3.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-laplacian-4.png" align="middle" width="100%"/>
+      </td>
+      <td>
+        <img src="./images/blend/oraple-laplacian-5.png" align="middle" width="100%"/>
+      </td>
+    </tr>  
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/source/car.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">McQueen</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/octocar_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/octopus.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Hank</figcaption>
+      </td>
+      <td>
+        <img src="./images/blend/octocar.png" align="middle" width="100%"/>
+        <figcaption align="middle">Smiling Hank</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/source/isabelle.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Girl</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/painted_isabelle_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/painted.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Painting</figcaption>
+      </td>
+      <td>
+        <img src="./images/blend/painted_isabelle.png" align="middle" width="100%"/>
+        <figcaption align="middle">Face Switched</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<br><br>
+<h2 align="middle">Part 2.1 Toy Problem</h2>
+<p>The constraints for the x-gradients, y-gradients, and match top left pixel resulted in a solution that's the exact same image as seen below. This solution can be found by creating a sparse matrix the size of the number of constraints we have by the number of pixels in the image and one with the number of pixels in the image by one. Then we can fill them with the constraints and solve using a least squares solver. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/grad/toy_res.png" align="middle" width="360px"/>
+        <figcaption align="middle">Result</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+<h2 align="middle">Part 2.2 Poisson Blending</h2>
+<p>This is done in the exact same way as part 2.1 except with the blending constraints instead of the ones in part 2.1, and for values outside the mask, we just copy the pixel over. This results in the masked image's gradient being adjusted to match the border so that the colors blend better than in part 1. Processing was done on all three channels separately to get these results.  </p>
+<p>Since I was using Python and didn't want to integrate the Matlab starter code, I transformed by own targets and created my own masks before processing in Photoshop.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./penguins.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Penguins</figcaption>
+      </td>
+      <td>
+        <img src="./im3_penguin_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./im3.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Snow Scene</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/grad/im3_penguin_clip.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Direct Copy</figcaption>
+      </td>
+      <td>
+        <img src="./images/grad/im3_penguin.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Poisson Blending</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="left">Laplacian Comparison</h2>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/source/dolphin.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Dolphin</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/sea_dolphin_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/sea.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Sea</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/grad/sea_dolphin_clip.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Direct Copy</figcaption>
+      </td>
+      <td>
+        <img src="./images/blend/sea_dolphin.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Laplacian Blending</figcaption>
+      </td>
+      <td>
+        <img src="./images/grad/sea_dolphin.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Poisson Blending</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>With the Laplacian blending, the dolphin is almost blended into the sea background but the color of the sea near from the targe image is still different from the source. With Poisson blending, the color gradient is adjusted to match so it looks like it has blended seamlessly.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/source/stars.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Stars</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/citystar_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/city.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Cityscape</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/grad/citystar_clip.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Direct Copy</figcaption>
+      </td>
+      <td>
+        <img src="./images/blend/citystar.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Laplacian Blending</figcaption>
+      </td>
+      <td>
+        <img src="./images/grad/citystar.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Poisson Blending</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>With Laplacian blending, the colors of the city sky and stars are definitely very very different. In fact, they are complete opposites (being complementary colors and all). Using Poisson blending, we get a city with the same colored starry sky. This looks more natural from the average view. However, upon closer inspection, there is a seam between the sky and starry sky because while Poisson blending takes care of the gradient, it doesn't do anything about textures. In this case, the amount of stars from the source image are dense enough that it can be percieved as a texture, which causes a clear seam with the solid color sky in the target image.</p>
+
+
+<br><br>
+
+<h2 align="left">Failure Case</h2>
+<p>In this case, the background of the lady is far too different from the beach image so when we use Poisson blending, her entrie body is color corrected so that her surrounding background would match that of the target image. This unfortunately makes her look very pale and transparent compared to the other little human in the target image.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/source/lady.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">lady</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/beach_lady_mask.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Binary Mask</figcaption>
+      </td>
+      <td>
+        <img src="./images/source/beach.jpg" align="middle" width="100%"/>
+        <figcaption align="middle">Beach</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="./images/grad/beach_lady_clip.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Direct Copy</figcaption>
+      </td>
+      <td>
+        <img src="./images/grad/beach_lady.png" align="middle" width="100%"/>
+        <figcaption align="middle">Combined with Poisson Blending</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+

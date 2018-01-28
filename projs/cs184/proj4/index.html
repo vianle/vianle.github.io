@@ -1,0 +1,374 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <script type="text/javascript"
+     src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script><style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Cloth Simulator</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Vi Le, CS184-aaf</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>Cloth can be simulated using point masses and springs that constrain them. First, I built the structure of the cloth with point masses uniformly spread over the desire height and width of the cloth. Then, for each, I set up the spring constraints. After, I set up the simulation by including the external forces, such as gravity, and the force from the springs that keeps the cloth together. Then, I handled collisions with the cloth. First, collisions with sphere and planes, and finally, handling collision with the cloth itself.</p>
+<p>It is amazing how with a bit of math, we can simulate the physics of cloth and virtually any object or material. However, the computation behind it is really heavy especially when one wants more realistic behaviors and more realistic objects that require many more points. As someone who does vfx from an artistic side, I really appreciate the technical perspective into how this all works as well as why there are so still so many bugs with industry standard programs.</p>
+<br></br>
+
+<h2 align="middle">Part I: Masses and springs</h2>
+<p>First, I created point masses based on how the cloth is positioned and according to its size. For vertically positioned cloths, I had to vary the z-coordinates very minimally because otherwise, a perfectly vertical cloth would never fall, which is important later when we use it with self-collisions. After making the point masses, I added springs to constrain them so that they can behave like cloth. In general and visual terms, structural constraints exist between between a point mass and its immediate neighboring point masses vertically and horizontally. This gives the cloth its structure but it can still shear which is not very cloth-like. Shearing constraints exist between a point mass and only its diagonal neighbors. This lets the cloth resist shearing but the cloth can still bend out of plane. Bending constraints exist between a point mass and its horizontal and vertical neighbors that are exactly two away. This resists out of plane bending and gives the cloth cloth-like behavior. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-3.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth wireframe without any shearing constraints</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-2.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth wireframe with only shearing constraints</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p1-1.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth wireframe with all constraints</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br></br>
+
+<h2 align="middle">Part 2: Simulation via numerical integration</h2>
+<p>I added up all the external accelerations and multiplied that by the mass in order to get all the external forces and put that in each point mass. Then for each spring, I applied the correction forces to both of its point masses, p<sub>a</sub> and p<sub>b</sub>, each in the opposite direction of the other, using Hooke's law:
+$$ correction~force = spring~constant * (|| p_a - p_b || - rest~length)$$ 
+After, I use Verlet integration to calculate the new position of the point masses where delta_t is the timestep: $$new~position = current~position + (1 - damping) * (current~position - last~position) + acceleration * delta_t^2$$ 
+Lastly, for every position, I check if it is within 10% of the spring's rest length and if it isn't I correct it so that it is within that constraint.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-2.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth from scene/pinned4.json in final resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>A very high spring constant results in the spring having more force to hold the point masses together while a low spring constant results in less forces so the cloth has more of a spring to it and bounces everywhere unlike that of a high spring constant.</p>
+<p>Density affects the mass of the cloth which in turn affects how much force is acting upon it as well as the correction force of the spring. At high densities, the cloth with two pins sags more and settles less quick. At lower densities, the cloth sags less and settles into its resting position fairly quickly.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-highdensity.png" align="middle" width="480px" />
+        <figcaption align="middle">Cloth with density at 100 g/cm^2</figcaption>
+      </td>
+<!--     </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+ -->      <td>
+        <img src="images/p2-lowdensity.png" align="middle" width="480px" />
+        <figcaption align="middle">Cloth with density at 1 g/cm^2</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>A low damping causes less loss of energy through friction and other factors so the cloth bounces a lot more than with a high damping, which causes a lot of loss of energy, resulting in the stable fall we often see.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p2-lowdamping.png" align="middle" width="600px" />
+        <figcaption align="middle">Cloth bounciness with damping at 0</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<br></br>
+
+<h2 align="middle">Part 3: Handling collisions with other objects</h2>
+<p>For handling collisions with a sphere, I calculated if the current position of the point mass was within the radius of the sphere and if it was, I would correct it with the last position and a correction vector accounting for friction as well. The correction vector was made by calculating where the point mass would have intersected the plane had it been traveling towards the origin of the sphere and subtracting the last position of the point mass. </p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-2.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth collision with sphere with spring constant 500</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-1.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth collision with sphere with spring constant 5000</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-3.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth collision with sphere with spring constant 50000</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>For collisions with planes, I calculated the intersection with the plane by using the dot product of the normal and the vector from the point on the plane to the position of the point mass. If it intersects, again, I would correct it with the last position and a correction vector accounting for friction. The correction vector for this one is the point it would have hit the plane had it traveled in a straight line to it, offset by a provided constant in the direction of the normal.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p3-4.png" align="middle" width="960px"/>
+        <figcaption align="middle">Cloth collision with plane at resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<br></br>
+
+<h2 align="middle">Part 4: Handling self-collisions</h2>
+<p>First I implemented a hash function so that all the point masses within a relative bounding box would have the same hash. This will enable me to quickly look up the point masses that could possibly collide with one another without looking through all the point masses. Then I populated the hash map with point masses. For handling self-collision, for every point mass, I look up the other point masses in the same bounding box through the hash map and check if they are within twice the thickness of this one. If they were, I would calculate a correction vector so that applied to the one point mass I was checking, it would be twice the thickness away, and then I took the average of all the correction vectors. Lastly I updated the position of the point mass by the averaged correction vector reduced by the number of simulation steps. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-2.png" align="middle" width="480px" />
+        <figcaption align="middle">Self-collision beginning of fall</figcaption>
+      </td>
+<!--     </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+ -->      <td>
+        <img src="images/p4-3.png" align="middle" width="480px"/>
+        <figcaption align="middle">Self-collision mid-fall</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-4.png" align="middle" width="960pxs"/>
+        <figcaption align="middle">Self-collision resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h1 align="left">Varying density</h1>
+<p>Like in part 2, density affects the mass of the cloth which in turn affects how much force is acting upon it as well as the correction force of the spring. At high densities, more force acts on the cloth so that really squishes it, highlighting parts where it is uneven, and letting it scrunch up more. At lower densities, there is less force so it settles down fairly smoothly.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-d1-1.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 1 g/cm^2 beginning of fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-d1-2.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 1 g/cm^2 mid-fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-d1-3.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 1 g/cm^2 resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-d10-1.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 10 g/cm^2 beginning of fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-d10-2.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 10 g/cm^2 mid-fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-d10-3.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 10 g/cm^2 resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-d100-1.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 100 g/cm^2 beginning of fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-d100-2.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 100 g/cm^2 mid-fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-d100-3.png" align="middle" width="320px"/>
+        <figcaption align="middle">Density 100 g/cm^2 resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<h1 align="left">Varying spring constant</h1>
+<p>Like in part 2, a very high spring constant results in the spring having more force to hold the point masses together while a low spring constant results in less forces so the cloth has more of a spring to it and bounces everywhere unlike that of a high spring constant. This picture below for a spring constant 500 at resting state is intentionally missing since such a low spring constant just causes the cloth to bounce away. It never actually had a resting state.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-ks500-1.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 500 beginning of fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-ks500-2.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 500 mid-fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-ks500-3.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 500 resting state <br> (Intentionally missing <br>-- just like the bouncing cloth)</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-ks1000-1.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 1000 beginning of fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-ks1000-2.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 1000 mid-fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-ks1000-3.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 1000 resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/p4-ks10000-1.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 10000 beginning of fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-ks10000-2.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 10000 mid-fall</figcaption>
+      </td>
+      <td>
+        <img src="images/p4-ks10000-3.png" align="middle" width="320px"/>
+        <figcaption align="middle">Spring constant 10000 resting state</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br></br>
+
+<h2 align="middle">Part 5: Extra credit: Additional cloth simulation features!</h2>
+<p>I added a diffuse and cell shader for more stylistic cloth looks. They can also be accessed from the same menu as wireframe, normal, and shader. </p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/diffuse.png" align="middle" width="480px" />
+        <figcaption align="middle">Diffuse Shading</figcaption>
+      </td>
+      <td>
+        <img src="images/cell.png" align="middle" width="480px"/>
+        <figcaption align="middle">Cell Shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+<p>For reference, this is what phong shading looks like:</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/phong.png" align="middle" width="480px" />
+        <figcaption align="middle">Phong Shading</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br></br>
+<h2 align="middle">Debugging Journey</h2>
+<p>This time around, my debugging journey wasn't as eventful. A lot of the first parts were segfaults due to indexing errors. On self-collisions, I updated by last position instead of current position so it ended up not working which resulted in me playing around with different detection methods using normals. You can see below that results in a very lumpy non-collision.</p>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/m1.png" align="middle" width="480px" />
+        <figcaption align="middle">Self-collision detection by normals</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

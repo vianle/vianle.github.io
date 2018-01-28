@@ -1,0 +1,313 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 194-26: Images of the Russian Empire: Colorizing the Prokudin-Gorskii photo collection</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+
+<h1 align="middle">CS194-26: Image Manipulation and Computational Photography, Fall 2017</h1>
+<h1 align="middle">Project 1: Colorizing the Prokudin-Gorskii photo collection
+</h1>
+<h2 align="middle">Vi Le, CS194-26-abj</h2>
+
+<div>
+
+
+<h2 align="middle">Overview</h2>
+<p>In this project, I implemented ways to align photos taken through red, green, and blue filters so that they can be stacked and result in a fully colored photo. First, I implemented ways to score how well the pictures aligned by using sum of square differences and then normalized cross-correlation. However, this was super slow on larger pictures so I implemented a pyramid where the scoring can happen on multiple scales and therefore, speeding it up.  </p>
+
+<br><br>
+<h2 align="middle">Sum of Square Differences and Normalized Cross-Correlation</h2>
+<p>I first implemented sum of square differences as the scoring function for aligning the RGB channels. The search was limited to a displacement of [-15, 15] in both horizontal and vertical directions. Then, I implemented the normalized cross-correlation scoring function which ended up the same results.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/ssd/cathedral.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">red: (12, 3)  green: (5, 2)</figcaption>
+      </td>
+
+      <td>
+        <img src="website/ssd/monastery.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">red: (3, 2)  green: (-3, 2)</figcaption>
+      </td>
+    <tr>
+    </tr>      
+      <td>
+        <img src="website/ssd/nativity.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">red: (7, 1)  green: (3, 1)</figcaption>
+      </td>
+      <td>
+        <img src="website/ssd/settlers.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">red: (14, -1)  green: (7, 0)</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Pyramid</h2>
+<p>Searching over so many pixels takes a very long time for larger images. In order to speed up the search, I implemented a pyramid of the same image at different scales. at each level, I scaled the image down by half. This method works so that scoring a smaller image takes less time and also gives you a general displacement where you can just search a 2 pixel displacement in the next level around where the displacement on the smaller image was. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/pyramid/harvesters.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (32, 12) green: (32, 17) </figcaption>
+      </td>
+      <td>
+        <img src="website/pyramid/icon.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (32, 23) green: (32, 17) </figcaption>
+      </td>
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/lady.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (32, 0) green: (32, 9) </figcaption>
+      </td>
+      <td>
+        <img src="website/pyramid/three_generations.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (32, 11) green: (32, 14) </figcaption>
+      </td>      
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/train.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (32, 32) green: (32, 6) </figcaption>
+      </td>      
+      <td>
+        <img src="website/pyramid/turkmen.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (32, 1) green: (32, 8) </figcaption>
+      </td>      
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/village.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> red: (137, 22) green: (65, 12) </figcaption>
+      </td>      
+      <td>
+        <img src="website/pyramid/01044u.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> 
+          <A HREF="http://www.loc.gov/pictures/collection/prok/item/prk2000000191/">source</A>
+          red: (22, 0) green: (-11, 1)</figcaption>
+      </td>      
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/01047u.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> 
+          <A HREF="http://www.loc.gov/pictures/collection/prok/item/prk2000000209/">source</A>
+          red: (72, 33) green: (24, 20) </figcaption>
+      </td>      
+      <td>
+        <img src="website/pyramid/01069u.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> 
+          <A HREF="http://www.loc.gov/pictures/collection/prok/item/prk2000000185/">source</A> red: (105, 43) green: (45, 21)</figcaption>
+      </td>      
+    </tr>
+<!-- http://www.loc.gov/pictures/collection/prok/item/prk2000000020/
+ -->  </table>
+</div>
+<br><br>
+
+<h2 align="middle">Examples of Alignment Going Wrong</h2>
+<p>Since the scoring functions (both sum of square differences and normalized cross-correlation) use how similar the RGB intensity values are to score, images that have very red, very green, or very blue patches of color will score poorly even when aligned correctly with the other channels as they won't be similar at all. Emir and self_portrait are two examples of this happening, resulting in a very poorly aligned image.</p>
+
+<div>
+  <table>
+    <td>
+      <table>
+      <td>
+        <img src="website/pyramid/emir.jpg" align="middle" width="600px"/>
+        <figcaption align="middle"> red: (32, 32) green: (32, 20)</figcaption>
+      </td>    
+    <tr>
+    </tr> 
+      <td>
+      <p>To the right is the original 3 RGB photos of Emir. The order of the filters form top to bottom is blue, green, then red. As you can see, in the red channel, Emir's robe is very dark while in the blue channel, his robe is extremely light. This is because his robe was originally very blue so to reproduce these colors, the blue and red channels will have very different intensities. The problem with our current scoring function is that while the image may align correctly, the difference and the red and blue channel will cause that alignment to score very poorly.</p>
+      </td>
+      </table>
+    </td>
+    <td>
+      <img src="website/emir.png" align="right" width="360px"/>
+    </td>
+  </table>
+
+</div>
+<div>
+  <table>
+    <td>
+      <table>
+      <td>
+        <img src="website/pyramid/self_portrait.jpg" align="middle" width="600px"/>
+        <figcaption align="middle">red: (0, 0) green: (32, 0)</figcaption>
+      </td>    
+    <tr>
+    </tr> 
+      <td>
+      <p>To the right is the original 3 RGB photos of self_portrait. The order of the filters form top to bottom is blue, green, then red. Nothing in this image is particularly very red, green, or blue so this one has a different problem than Emir does. Throughout all the channels, it seems that this picture has very little contrast among large shapes and lots of small details with similar textures. This causes a lot of error in scoring since large shapes with contrast works well in the pyramid and details with similar textures may misalign with other parts of the similar texture since it scores just as well.</p>
+      </td>
+      </table>
+    </td>
+    <td>
+      <img src="website/self_portrait.png" align="right" width="360px"/>
+    </td>
+  </table>
+</div>
+
+<div>
+<br><br>
+
+<h2 align="middle">Bells and Whistles: Edge Detection</h2>
+<p>In order to align images very red, very green, or very blue patches of color, like the examples of misalignment above, I used Sobel edge detection. At first the lines were too thin to use with the pyramid implementation so I also used dilation (with a stroke of about an 100th of the entire image) to enlarge the edges. Once these Sobel edge detected and dilated images were aligned using the same functions as before, I took the displacement and applied it to the actual RGB channels to stack them. This worked for Emir but not for self_portrait because of its high details. Then I added a step of erosion before dilation in order to account for noisy detailed textures that were unnecessarily detected as edges. </p>
+
+</div>
+<h3 align="middle">Emir</h2>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/edge/b-sobel.jpg" align="middle" height="400px"/>
+        <figcaption align="middle">Blue Channel Sobel Edge Detection</figcaption>
+      </td>
+      <td>
+        <img src="website/edge/b.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">Blue Channel Sobel Edge Detection and Dilation</figcaption>
+      </td>
+    <tr>
+  </table>
+</div>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/edge/g.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">Green Channel Sobel Edge Detection and Dilation</figcaption>
+      </td>
+      <td>
+        <img src="website/edge/r.jpg" align="middle" width="480px"/>
+        <figcaption align="middle">Red Channel Sobel Edge Detection and Dilation</figcaption>
+      </td>    
+    <tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/pyramid/emir.jpg" align="middle" height="400px"/>
+        <figcaption align="middle"> Before -- red: (32, 32) green: (32, 20)</figcaption>
+      </td>    
+      <td>
+        <img src="website/edge/emir.jpg" align="middle" width="480px"/>
+        <figcaption align="middle"> After -- red: (108, 38) green: (50, 22) </figcaption>
+      </td>      
+    <tr>
+  </table>
+</div>
+<br><br>
+
+<h3 align="middle">Self_portrait</h2>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/edge/b-self.jpg" align="middle" width="320px"/>
+        <figcaption align="middle">Blue Channel</figcaption>
+      </td>      
+      <td>
+        <img src="website/edge/g-self.jpg" align="middle" width="320px"/>
+        <figcaption align="middle">Green Channel</figcaption>
+      </td>
+      <td>
+        <img src="website/edge/r-self.jpg" align="middle" width="320px"/>
+        <figcaption align="middle">Red Channel</figcaption>
+      </td>    
+    <tr>
+  </table>
+</div>
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="website/pyramid/self_portrait.jpg" align="middle" height="400px"/>
+        <figcaption align="middle">Before -- red: (0, 0) green: (32, 0)</figcaption>
+      </td>    
+      <td>
+        <img src="website/edge/self_portrait.jpg" align="middle" width="490px"/>
+        <figcaption align="middle"> After -- red: (175, 35) green: (77, 27) </figcaption>
+      </td>      
+    <tr>
+  </table>
+</div>
+
+<br><br>
+
+<h2 align="middle">Bells and Whistles: Automatic Contrast</h2>
+<p>I implemented an automatic contrast by equalizing the histogram. Below are some before (left) and after (right) images.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr> 
+      <td>
+        <img src="website/pyramid/three_generations.jpg" align="middle" width="480px"/>
+      </td>
+      <td>
+        <img src="website/pyramid/three_generations-contrast.jpg" align="middle" width="480px"/>
+      </td>      
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/turkmen.jpg" align="middle" width="480px"/>
+      </td>      
+      <td>
+        <img src="website/pyramid/turkmen-contrast.jpg" align="middle" width="480px"/>
+      </td>      
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/01044u.jpg" align="middle" width="480px"/>
+      </td>      
+      <td>
+        <img src="website/pyramid/01044u-contrast.jpg" align="middle" width="480px"/>
+      </td>      
+    <tr>
+    </tr>  
+      <td>
+        <img src="website/pyramid/01047u.jpg" align="middle" width="480px"/>
+      </td>      
+      <td>
+        <img src="website/pyramid/01047u-contrast.jpg" align="middle" width="480px"/>
+      </td>      
+    </tr>
+  </table>
+</div>
+
+</div>
+</body>
+</html>
+
+
+
+
